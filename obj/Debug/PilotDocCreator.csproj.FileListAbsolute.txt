@@ -5,3 +5,5 @@ D:\VisualStudioProjects\repos\PilotDocCreator\obj\Debug\PilotDocCreator.csproj.C
 D:\VisualStudioProjects\repos\PilotDocCreator\obj\Debug\PilotDocCreator.csproj.CopyComplete
 D:\VisualStudioProjects\repos\PilotDocCreator\obj\Debug\PilotDocCreator.ext2.dll
 D:\VisualStudioProjects\repos\PilotDocCreator\obj\Debug\PilotDocCreator.ext2.pdb
+C:\Users\ivman\AppData\Local\ASCON\Pilot-ICE Enterprise\Development\PilotDocCreator\PilotDocCreator.ext2.dll
+C:\Users\ivman\AppData\Local\ASCON\Pilot-ICE Enterprise\Development\PilotDocCreator\PilotDocCreator.ext2.pdb

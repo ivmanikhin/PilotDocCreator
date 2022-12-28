@@ -1,7 +1,11 @@
 ﻿using System;
 using System.ComponentModel.Composition;
 using System.Linq;
+//using System.Windows;
+//using System.Windows.Media;
 using Ascon.Pilot.SDK.Menu;
+using Ascon.Pilot.SDK.CreateObjectSample;
+
 
 namespace Ascon.Pilot.SDK.PilotDocCreator
 {
@@ -10,6 +14,7 @@ namespace Ascon.Pilot.SDK.PilotDocCreator
     {
         private readonly IObjectModifier _modifier;
         private readonly IObjectsRepository _repository;
+        private readonly Ascon.Pilot.SDK.IPilotDialogService _dialogService;
         private const string CREATE_PROJ_DOC = "CreateProjDocMenuItem";
         private IDataObject _selected;
 
@@ -17,10 +22,11 @@ namespace Ascon.Pilot.SDK.PilotDocCreator
 
 
         [ImportingConstructor]
-        public DocCreator(IPilotDialogService dialogService, IObjectModifier modifier, IObjectsRepository repository /*IObjectCardControlProvider objectCardControlProvider*/)
+        public DocCreator(IPilotDialogService dialogService, IObjectModifier modifier, IObjectsRepository repository)
         {
             _modifier = modifier;
             _repository = repository;
+            _dialogService = dialogService;
         }
 
         public void Build(IMenuBuilder builder, ObjectsViewContext context)
@@ -35,26 +41,29 @@ namespace Ascon.Pilot.SDK.PilotDocCreator
         }
 
 
-        public /*async*/ void OnMenuItemClick(string name, ObjectsViewContext context)
+        public async void OnMenuItemClick(string name, ObjectsViewContext context)
         {
             if (name == CREATE_PROJ_DOC)
             {
-                //var newDocId = new Guid();
+                var loader = new ObjectLoader(_repository);
+                var newDocId = Guid.NewGuid();
                 var parent = _selected;
                 parent.Attributes.TryGetValue("project_document_number", out var parentNumber);
                 parent.Attributes.TryGetValue("project_document_name", out var parentName);
-                _modifier.Create(/*newDocId, */parent, GetProjDocECMType()).SetAttribute("project_document_number", parentNumber.ToString())
+                _modifier.Create(newDocId, parent, GetProjDocECMType()).SetAttribute("project_document_number", parentNumber.ToString())
                                                                            .SetAttribute("project_document_name", parentName.ToString())
                                                                            .SetAttribute("revision_symbol", "0");
-
+                
                 _modifier.Apply();
+                var newDoc = await loader.Load(newDocId);
+                _dialogService.ShowObjectDialog(newDoc.Id, newDoc.Type.Id, _modifier, newDoc.Type.HasFiles);
             }
         }
 
-        private IType GetProjFolderType()
-        { 
-            return _repository.GetType("project_document_folder");
-        }
+        //private IType GetProjFolderType()
+        //{ 
+        //    return _repository.GetType("project_document_folder");
+        //}
 
         private IType GetProjDocECMType()
         {
