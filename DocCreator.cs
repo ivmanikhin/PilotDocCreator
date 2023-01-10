@@ -54,8 +54,8 @@ namespace Ascon.Pilot.SDK.PilotDocCreator
                 parent.Attributes.TryGetValue("project_document_number", out var parentNumber);
                 parent.Attributes.TryGetValue("project_document_name", out var parentName);
                 _modifier.Create(newDocId, parent, _repository.GetType("project_document_ecm")).SetAttribute("project_document_number", parentNumber.ToString())
-                                                                           .SetAttribute("project_document_name", parentName.ToString())
-                                                                           .SetAttribute("revision_symbol", "0");
+                                                                                               .SetAttribute("project_document_name", parentName.ToString())
+                                                                                               .SetAttribute("revision_symbol", "0");
                 
                 _modifier.Apply();
             }
