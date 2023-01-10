@@ -1,10 +1,10 @@
 ﻿using System;
 using System.ComponentModel.Composition;
 using System.Linq;
-//using System.Windows;
-//using System.Windows.Media;
+using System.Collections.Generic;
 using Ascon.Pilot.SDK.Menu;
 using Ascon.Pilot.SDK.CreateObjectSample;
+using Ascon.Pilot.SDK.ObjectsSample;
 
 
 namespace Ascon.Pilot.SDK.PilotDocCreator
@@ -14,34 +14,37 @@ namespace Ascon.Pilot.SDK.PilotDocCreator
     {
         private readonly IObjectModifier _modifier;
         private readonly IObjectsRepository _repository;
-        private readonly Ascon.Pilot.SDK.IPilotDialogService _dialogService;
         private const string CREATE_PROJ_DOC = "CreateProjDocMenuItem";
         private IDataObject _selected;
+        private DataObjectWrapper _selectedDOW;
+        private AccessLevel _accessLevel;
 
-        
+
+
 
 
         [ImportingConstructor]
-        public DocCreator(IPilotDialogService dialogService, IObjectModifier modifier, IObjectsRepository repository)
+        public DocCreator(IObjectModifier modifier, IObjectsRepository repository)
         {
             _modifier = modifier;
             _repository = repository;
-            _dialogService = dialogService;
         }
 
         public void Build(IMenuBuilder builder, ObjectsViewContext context)
         {
+
             _selected = context.SelectedObjects.ToList().First();
-            //parentID = _selected.ParentId;
-            var itemNames = builder.ItemNames.ToList();
-            //const string indexItemName = "miCreate";
-            var insertIndex = 0; //itemNames.IndexOf(indexItemName);
+            _selectedDOW = new DataObjectWrapper(_selected, _repository);
+            _accessLevel = GetMyAccessLevel(_selectedDOW);
+            bool notFrozen = !(_selectedDOW.StateInfo.State.ToString().Contains("Frozen"));
+            var insertIndex = 0;
             if (context.IsContext && "project_document_folder" == _selected.Type.Name)
-                builder.AddItem(CREATE_PROJ_DOC, insertIndex).WithHeader("Создать документ с исходным файлом");
+                builder.AddItem(CREATE_PROJ_DOC, insertIndex).WithHeader("Создать документ с исходным файлом")
+                                                             .WithIsEnabled((((int)_accessLevel & 16) != 0) & notFrozen);
         }
 
 
-        public async void OnMenuItemClick(string name, ObjectsViewContext context)
+        public void OnMenuItemClick(string name, ObjectsViewContext context)
         {
             if (name == CREATE_PROJ_DOC)
             {
@@ -50,24 +53,64 @@ namespace Ascon.Pilot.SDK.PilotDocCreator
                 var parent = _selected;
                 parent.Attributes.TryGetValue("project_document_number", out var parentNumber);
                 parent.Attributes.TryGetValue("project_document_name", out var parentName);
-                _modifier.Create(newDocId, parent, GetProjDocECMType()).SetAttribute("project_document_number", parentNumber.ToString())
+                _modifier.Create(newDocId, parent, _repository.GetType("project_document_ecm")).SetAttribute("project_document_number", parentNumber.ToString())
                                                                            .SetAttribute("project_document_name", parentName.ToString())
                                                                            .SetAttribute("revision_symbol", "0");
                 
                 _modifier.Apply();
-                var newDoc = await loader.Load(newDocId);
-                _dialogService.ShowObjectDialog(newDoc.Id, newDoc.Type.Id, _modifier, newDoc.Type.HasFiles);
             }
         }
 
-        //private IType GetProjFolderType()
-        //{ 
-        //    return _repository.GetType("project_document_folder");
-        //}
-
-        private IType GetProjDocECMType()
+        private AccessLevel GetMyAccessLevel(DataObjectWrapper element)
         {
-            return _repository.GetType("project_document_ecm");
+            var currentAccesLevel = AccessLevel.None;
+            var person = _repository.GetCurrentPerson();
+            foreach (var position in person.AllOrgUnits())
+            {
+                currentAccesLevel |= GetAccessLevel(element, position);
+            }
+
+            return currentAccesLevel;
         }
+
+        private AccessLevel GetAccessLevel(DataObjectWrapper element, int positonId)
+        {
+            var currentAccesLevel = AccessLevel.None;
+            var orgUnits = _repository.GetOrganisationUnits().ToDictionary(k => k.Id);
+            var accesses = GetAccessRecordsForPosition(element, positonId, orgUnits);
+            foreach (var source in accesses)
+            {
+                currentAccesLevel |= source.Access.AccessLevel;
+            }
+            return currentAccesLevel;
+        }
+
+        private IEnumerable<AccessRecordWrapper> GetAccessRecordsForPosition(DataObjectWrapper obj, int positionId, IDictionary<int, IOrganisationUnit> organisationUnits)
+        {
+            return obj.Access.Where(x => BelongsTo(positionId, x.OrgUnitId, organisationUnits));
+        }
+
+        public static bool BelongsTo(int position, int organisationUnit, IDictionary<int, IOrganisationUnit> organisationUnits)
+        {
+            Stack<int> units = new Stack<int>();
+            units.Push(organisationUnit);
+            while (units.Any())
+            {
+                var unitId = units.Pop();
+                if (position == unitId)
+                    return true;
+
+                IOrganisationUnit unit;
+                if (organisationUnits.TryGetValue(unitId, out unit))
+                {
+                    foreach (var childUnitId in unit.Children)
+                    {
+                        units.Push(childUnitId);
+                    }
+                }
+            }
+            return false;
+        }
+
     }
 }
