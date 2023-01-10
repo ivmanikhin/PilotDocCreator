@@ -16,7 +16,7 @@ namespace Ascon.Pilot.SDK.PilotDocCreator
         private readonly IObjectsRepository _repository;
         private const string CREATE_PROJ_DOC = "CreateProjDocMenuItem";
         private IDataObject _selected;
-        private DataObjectWrapper _selectedDOW;
+        private DataObjectWrapper _selected_;
         private AccessLevel _accessLevel;
 
 
@@ -24,7 +24,7 @@ namespace Ascon.Pilot.SDK.PilotDocCreator
 
 
         [ImportingConstructor]
-        public DocCreator(IObjectModifier modifier, IObjectsRepository repository)
+        public DocCreator(IPilotDialogService dialogService, IObjectModifier modifier, IObjectsRepository repository)
         {
             _modifier = modifier;
             _repository = repository;
@@ -34,9 +34,9 @@ namespace Ascon.Pilot.SDK.PilotDocCreator
         {
 
             _selected = context.SelectedObjects.ToList().First();
-            _selectedDOW = new DataObjectWrapper(_selected, _repository);
-            _accessLevel = GetMyAccessLevel(_selectedDOW);
-            bool notFrozen = !(_selectedDOW.StateInfo.State.ToString().Contains("Frozen"));
+            _selected_ = new DataObjectWrapper(_selected, _repository);
+            _accessLevel = GetMyAccessLevel(_selected_);
+            bool notFrozen = !(_selected_.StateInfo.State.ToString().Contains("Frozen"));
             var insertIndex = 0;
             if (context.IsContext && "project_document_folder" == _selected.Type.Name)
                 builder.AddItem(CREATE_PROJ_DOC, insertIndex).WithHeader("Создать документ с исходным файлом")
@@ -54,12 +54,13 @@ namespace Ascon.Pilot.SDK.PilotDocCreator
                 parent.Attributes.TryGetValue("project_document_number", out var parentNumber);
                 parent.Attributes.TryGetValue("project_document_name", out var parentName);
                 _modifier.Create(newDocId, parent, _repository.GetType("project_document_ecm")).SetAttribute("project_document_number", parentNumber.ToString())
-                                                                           .SetAttribute("project_document_name", parentName.ToString())
-                                                                           .SetAttribute("revision_symbol", "0");
+                                                                                               .SetAttribute("project_document_name", parentName.ToString())
+                                                                                               .SetAttribute("revision_symbol", "0");
                 
                 _modifier.Apply();
             }
         }
+
 
         private AccessLevel GetMyAccessLevel(DataObjectWrapper element)
         {
