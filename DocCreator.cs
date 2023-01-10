@@ -16,7 +16,7 @@ namespace Ascon.Pilot.SDK.PilotDocCreator
         private readonly IObjectsRepository _repository;
         private const string CREATE_PROJ_DOC = "CreateProjDocMenuItem";
         private IDataObject _selected;
-        private DataObjectWrapper _selected_;
+        private DataObjectWrapper _selectedDOW;
         private AccessLevel _accessLevel;
 
 
@@ -34,9 +34,9 @@ namespace Ascon.Pilot.SDK.PilotDocCreator
         {
 
             _selected = context.SelectedObjects.ToList().First();
-            _selected_ = new DataObjectWrapper(_selected, _repository);
-            _accessLevel = GetMyAccessLevel(_selected_);
-            bool notFrozen = !(_selected_.StateInfo.State.ToString().Contains("Frozen"));
+            _selectedDOW = new DataObjectWrapper(_selected, _repository);
+            _accessLevel = GetMyAccessLevel(_selectedDOW);
+            bool notFrozen = !(_selectedDOW.StateInfo.State.ToString().Contains("Frozen"));
             var insertIndex = 0;
             if (context.IsContext && "project_document_folder" == _selected.Type.Name)
                 builder.AddItem(CREATE_PROJ_DOC, insertIndex).WithHeader("Создать документ с исходным файлом")
