@@ -32,17 +32,30 @@
     <WarningLevel>4</WarningLevel>
   </PropertyGroup>
   <ItemGroup>
+    <Reference Include="Ascon.Pilot.Client">
+      <HintPath>packages\Ascon.Pilot.Client.dll</HintPath>
+    </Reference>
+    <Reference Include="Ascon.Pilot.ClientCore">
+      <HintPath>packages\Ascon.Pilot.ClientCore.dll</HintPath>
+    </Reference>
+    <Reference Include="Ascon.Pilot.Controls">
+      <HintPath>packages\Ascon.Pilot.Controls.dll</HintPath>
+    </Reference>
     <Reference Include="Ascon.Pilot.SDK, Version=20.35.0.34472, Culture=neutral, processorArchitecture=MSIL">
       <HintPath>packages\Ascon.Pilot.SDK.20.35.0\lib\net40-Client\Ascon.Pilot.SDK.dll</HintPath>
     </Reference>
     <Reference Include="Ascon.Pilot.Theme, Version=20.35.0.34472, Culture=neutral, processorArchitecture=MSIL">
       <HintPath>packages\Ascon.Pilot.SDK.20.35.0\lib\net40-Client\Ascon.Pilot.Theme.dll</HintPath>
     </Reference>
+    <Reference Include="Ascon.Pilot.VisualElements">
+      <HintPath>packages\Ascon.Pilot.VisualElements.dll</HintPath>
+    </Reference>
     <Reference Include="PresentationCore" />
     <Reference Include="PresentationFramework" />
     <Reference Include="System" />
     <Reference Include="System.ComponentModel.Composition" />
     <Reference Include="System.Core" />
+    <Reference Include="System.Windows.Forms" />
     <Reference Include="System.Xml.Linq" />
     <Reference Include="System.Data.DataSetExtensions" />
     <Reference Include="Microsoft.CSharp" />
@@ -54,7 +67,6 @@
   <ItemGroup>
     <Compile Include="DataObjectsWrapper.cs" />
     <Compile Include="DocCreator.cs" />
-    <Compile Include="ObjectLoader.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
   </ItemGroup>
   <ItemGroup>

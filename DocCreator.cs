@@ -3,8 +3,10 @@ using System.ComponentModel.Composition;
 using System.Linq;
 using System.Collections.Generic;
 using Ascon.Pilot.SDK.Menu;
-using Ascon.Pilot.SDK.CreateObjectSample;
 using Ascon.Pilot.SDK.ObjectsSample;
+
+
+
 
 
 namespace Ascon.Pilot.SDK.PilotDocCreator
@@ -15,12 +17,12 @@ namespace Ascon.Pilot.SDK.PilotDocCreator
         private readonly IObjectModifier _modifier;
         private readonly IObjectsRepository _repository;
         private const string CREATE_PROJ_DOC = "CreateProjDocMenuItem";
+        private const string CREATE_PROJ_DOC_LABEL = "Создать документ с исходным файлом";
+        private const string COPY_NAME_TO_CLIPBOARD = "CopyNameToClipboard";
+        private const string COPY_NAME_TO_CLIPBOARD_LABEL = "Копировать номер и наименование";
         private IDataObject _selected;
         private DataObjectWrapper _selectedDOW;
         private AccessLevel _accessLevel;
-
-
-
 
 
         [ImportingConstructor]
@@ -28,6 +30,7 @@ namespace Ascon.Pilot.SDK.PilotDocCreator
         {
             _modifier = modifier;
             _repository = repository;
+
         }
 
         public void Build(IMenuBuilder builder, ObjectsViewContext context)
@@ -39,8 +42,10 @@ namespace Ascon.Pilot.SDK.PilotDocCreator
             bool notFrozen = !(_selectedDOW.StateInfo.State.ToString().Contains("Frozen"));
             var insertIndex = 0;
             if (context.IsContext && "project_document_folder" == _selected.Type.Name)
-                builder.AddItem(CREATE_PROJ_DOC, insertIndex).WithHeader("Создать документ с исходным файлом")
+                builder.AddItem(CREATE_PROJ_DOC, insertIndex).WithHeader(CREATE_PROJ_DOC_LABEL)
                                                              .WithIsEnabled((((int)_accessLevel & 16) != 0) & notFrozen);
+            if ("project_document_ecm" == _selected.Type.Name)
+                builder.AddItem(COPY_NAME_TO_CLIPBOARD, insertIndex).WithHeader(COPY_NAME_TO_CLIPBOARD_LABEL);
         }
 
 
@@ -48,18 +53,27 @@ namespace Ascon.Pilot.SDK.PilotDocCreator
         {
             if (name == CREATE_PROJ_DOC)
             {
-                var loader = new ObjectLoader(_repository);
                 var newDocId = Guid.NewGuid();
-                var parent = _selected;
-                parent.Attributes.TryGetValue("project_document_number", out var parentNumber);
-                parent.Attributes.TryGetValue("project_document_name", out var parentName);
-                _modifier.Create(newDocId, parent, _repository.GetType("project_document_ecm")).SetAttribute("project_document_number", parentNumber.ToString())
+                _selected.Attributes.TryGetValue("project_document_number", out var parentNumber);
+                _selected.Attributes.TryGetValue("project_document_name", out var parentName);
+                _modifier.Create(newDocId, _selected, _repository.GetType("project_document_ecm")).SetAttribute("project_document_number", parentNumber.ToString())
                                                                                                .SetAttribute("project_document_name", parentName.ToString())
                                                                                                .SetAttribute("revision_symbol", "0");
-                
                 _modifier.Apply();
             }
+
+            if (name == COPY_NAME_TO_CLIPBOARD)
+            {
+                string docRevString = "";
+                _selected.Attributes.TryGetValue("project_document_number", out var docNumber);
+                _selected.Attributes.TryGetValue("project_document_name", out var docName);
+                if (_selected.Attributes.TryGetValue("revision_symbol", out var docRev))
+                    docRevString = docRev.ToString() + " - ";
+                System.Windows.Forms.Clipboard.SetText(docNumber + " - " + docRevString + docName);
+            }
         }
+
+
 
         private AccessLevel GetMyAccessLevel(DataObjectWrapper element)
         {
