@@ -16,7 +16,7 @@ namespace Ascon.Pilot.SDK.PilotDocCreator
     {
         private readonly IObjectModifier _modifier;
         private readonly IObjectsRepository _repository;
-        private const string CREATE_PROJ_DOC = "CreateProjDocMenuItem";
+        private const string CREATE_PROJ_DOC = "CreateProjDocMenuItem"; 
         private const string CREATE_PROJ_DOC_LABEL = "Создать документ с исходным файлом";
         private const string COPY_NAME_TO_CLIPBOARD = "CopyNameToClipboard";
         private const string COPY_NAME_TO_CLIPBOARD_LABEL = "Копировать номер и наименование";
@@ -38,14 +38,14 @@ namespace Ascon.Pilot.SDK.PilotDocCreator
 
             _selected = context.SelectedObjects.ToList().First();
             _selectedDOW = new DataObjectWrapper(_selected, _repository);
-            _accessLevel = GetMyAccessLevel(_selectedDOW);
-            bool notFrozen = !(_selectedDOW.StateInfo.State.ToString().Contains("Frozen"));
-            var insertIndex = 0;
-            if (context.IsContext && "project_document_folder" == _selected.Type.Name)
+            _accessLevel = GetMyAccessLevel(_selectedDOW); //проверка уровня доступа
+            bool notFrozen = !(_selectedDOW.StateInfo.State.ToString().Contains("Frozen")); //проверка, не заморожен ли документ
+            var insertIndex = 0; //порядковый номер пункта в меню
+            if (context.IsContext && "project_document_folder" == _selected.Type.Name) //если щелчёк произошел по пустому месту и тип объекта - проектный документ
                 builder.AddItem(CREATE_PROJ_DOC, insertIndex).WithHeader(CREATE_PROJ_DOC_LABEL)
-                                                             .WithIsEnabled((((int)_accessLevel & 16) != 0) & notFrozen);
-            if ("project_document_ecm" == _selected.Type.Name)
-                builder.AddItem(COPY_NAME_TO_CLIPBOARD, insertIndex).WithHeader(COPY_NAME_TO_CLIPBOARD_LABEL);
+                                                             .WithIsEnabled((((int)_accessLevel & 16) != 0) & notFrozen); //добавить пункт меню, активный, еслм докумет не замомрожен и есть права на его редактирование
+            if ("project_document_ecm" == _selected.Type.Name) //если объект является документом с исходным файлом
+                builder.AddItem(COPY_NAME_TO_CLIPBOARD, insertIndex).WithHeader(COPY_NAME_TO_CLIPBOARD_LABEL); //добавить пункт меню "копировать номер и наименование"
         }
 
 
@@ -53,23 +53,24 @@ namespace Ascon.Pilot.SDK.PilotDocCreator
         {
             if (name == CREATE_PROJ_DOC)
             {
-                var newDocId = Guid.NewGuid();
-                _selected.Attributes.TryGetValue("project_document_number", out var parentNumber);
-                _selected.Attributes.TryGetValue("project_document_name", out var parentName);
-                _modifier.Create(newDocId, _selected, _repository.GetType("project_document_ecm")).SetAttribute("project_document_number", parentNumber.ToString())
-                                                                                               .SetAttribute("project_document_name", parentName.ToString())
-                                                                                               .SetAttribute("revision_symbol", "0");
+                var newDocId = Guid.NewGuid(); //создание нового ID объекта
+                _selected.Attributes.TryGetValue("project_document_number", out var parentNumber); //сбор атрибутов с родителя
+                _selected.Attributes.TryGetValue("project_document_name", out var parentName); //сбор атрибутов с родителя
+                var docType = _repository.GetType("project_document_ecm"); //тип документа для создания нового документа
+                _modifier.Create(newDocId, _selected, docType).SetAttribute("project_document_number", parentNumber.ToString())
+                                                              .SetAttribute("project_document_name", parentName.ToString())
+                                                              .SetAttribute("revision_symbol", "0"); //создание пустого документа с исходным файлом и атрибутами родителя
                 _modifier.Apply();
             }
 
             if (name == COPY_NAME_TO_CLIPBOARD)
             {
-                string docRevString = "";
-                _selected.Attributes.TryGetValue("project_document_number", out var docNumber);
-                _selected.Attributes.TryGetValue("project_document_name", out var docName);
-                if (_selected.Attributes.TryGetValue("revision_symbol", out var docRev))
+                string docRevString = ""; //создание переменной для ревизии
+                _selected.Attributes.TryGetValue("project_document_number", out var docNumber); //сбор атрибутов с родителя
+                _selected.Attributes.TryGetValue("project_document_name", out var docName); //сбор атрибутов с родителя
+                if (_selected.Attributes.TryGetValue("revision_symbol", out var docRev)) //если чтение ревизии прошло успешно, 
                     docRevString = docRev.ToString() + " - ";
-                System.Windows.Forms.Clipboard.SetText(docNumber + " - " + docRevString + docName);
+                System.Windows.Forms.Clipboard.SetText(docNumber.ToString() + " - " + docRevString + docName.ToString()); //копировать в буфер обмена номер, ревизию и наименование
             }
         }
 
